@@ -1,4 +1,4 @@
-package TestClasses;
+package TestsApi;
 
 import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
