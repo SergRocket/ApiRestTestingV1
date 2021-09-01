@@ -1,6 +1,10 @@
 package TestsApi;
 
+import Steps.UserStep;
+import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -10,21 +14,31 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class RestTest {
+    private static RestAutorization api;
+
+    @BeforeClass
+    public static void prepeareClient(){
+        api = RestAutorization.loginAs("eve.holt@reques.in", "citysLicka");
+    }
+
+    //for eliminating code repeats
+    private static final RequestSpecification REQUEST_SPECIFICATION = new RequestSpecBuilder()
+            .setBaseUri("https://reqres.in/api")
+            .setBasePath("/users")
+            .setContentType(ContentType.JSON)
+            .build();
+
     @Test
     public void getUsers(){
         given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+                .spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then().statusCode(200);
     }
-@Test
-public void getOneUsersName(){
+    @Test
+    public void getOneUsersName(){
         given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+                .spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then()
                 .statusCode(200)
@@ -34,9 +48,7 @@ public void getOneUsersName(){
 
        @Test
     public void printUserName(){
-        String user = given().baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+        String user = given().spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then()
                 .statusCode(200)
@@ -46,9 +58,7 @@ public void getOneUsersName(){
 
        @Test
     public void checkUserNameWithLamda (){
-        given().baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+        given().spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then()
                 .statusCode(200)
@@ -57,9 +67,7 @@ public void getOneUsersName(){
        @Test
     public void getTheListOfEmails(){
         List<String> emails = given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+                .spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then()
                 .statusCode(200)
@@ -72,9 +80,7 @@ public void getOneUsersName(){
        @Test
     public void deserializationOfTheListtoOBJ(){
          List<DeserializaTest> users = given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+                .spec(REQUEST_SPECIFICATION)
                 .when().get()
                 .then()
                 .statusCode(200)
@@ -83,37 +89,35 @@ public void getOneUsersName(){
        }
       @Test
     public void deserializationOfTheListtoOBJFULL() {
-        List<DeserializaFullTest> users = given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
-                .when().get()
-                .then()
-                .statusCode(200)
-                .extract().jsonPath().getList("data", DeserializaFullTest.class);
-        assertThat(users).extracting(DeserializaFullTest::getEmail).contains("george.bluth@reqres.in");
+
+        assertThat(api.getUsers()).extracting(DeserializaFullTest::getEmail).contains("george.bluth@reqres.in");
     }
 
     @Test
     public void createUser(){
-        CreateUserTest createUserTest = new CreateUserTest();
-        createUserTest.setName("Serg");
-        createUserTest.setPosition("Senior_QAA");
 
-        CreateUserResponseTest createUserResponseTest = given()
-                .baseUri("https://reqres.in/api")
-                .basePath("/users")
-                .contentType(ContentType.JSON)
+
+        CreateUserTest createUsersTest = UserGenerator.getSimpleUser();
+        CreateUserResponseTest createUserResponseTest = api.createUser(createUsersTest);
+
+        /*CreateUserResponseTest createUserResponseTest = given(createUserTest)
+                .spec(REQUEST_SPECIFICATION)
                 .body(createUserTest)
                 .when().post()
                 //json can be changed into Object with crUserRespTest
-                .then().extract().as(CreateUserResponseTest.class);
+                .then().extract().as(CreateUserResponseTest.class);*/
         //checking that created user is the same as we wanted
         assertThat(createUserResponseTest)
                 .isNotNull()
                 .extracting(CreateUserResponseTest::getName)
-                .isEqualTo(createUserTest.getName());
+                .isEqualTo(createUsersTest.getName());
+
+        assertThat(createUsersTest)
+                .isNotNull()
+                .extracting(CreateUserTest::getName)
+                .isEqualTo(createUsersTest.getName());
     }
+
 }
 
 
